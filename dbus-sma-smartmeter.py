@@ -13,6 +13,7 @@ Used https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.
 Reading information from the SMA-EM Smart Meter or Sunny HM2.0 via Speedwire Broadcast puts the info on dbus.
 
 """
+from gi.repository import GLib
 from vedbus import VeDbusService
 import socket
 import struct
@@ -29,11 +30,10 @@ MULTICAST_PORT = 9522
 sys.path.insert(1, os.path.join(
     os.path.dirname(__file__), '../ext/velib_python'))
 
-
 class DbusSMAEMService(object):
     def __init__(self, servicename, deviceinstance, productname='SMA-EM', connection='SMA-EM Service'):
 
-        obis_points = {
+        self._obis_points = {
             # real values
             0x00010400: {'name': 'pregard',        'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
             0x00010800: {'name': 'pregardcounter', 'length': 8, 'factor': 1/3600000, 'unit': 'kWh', 'value': 0, 'path': '/Ac/Energy/Forward'},
@@ -77,11 +77,12 @@ class DbusSMAEMService(object):
 
         # Create the mandatory objects
         self._dbusservice.add_path('/DeviceInstance', deviceinstance)
-        self._dbusservice.add_path('/ProductId', 0)
+        self._dbusservice.add_path('/ProductId', 16)
         self._dbusservice.add_path('/ProductName', productname)
-        self._dbusservice.add_path('/FirmwareVersion', 0)
+        self._dbusservice.add_path('/FirmwareVersion', 0.1)
         self._dbusservice.add_path('/HardwareVersion', 0)
         self._dbusservice.add_path('/Connected', 1)
+        self._dbusservice.add_path('/UpdateIndex', 0)
 
         for obis_value in self._obis_points.values():
             if obis_value['path'] != '':
@@ -162,19 +163,18 @@ class DbusSMAEMService(object):
                     # Set read address to next obis value
                     pos += length
 
-                    # calculate the power values
-                    self._obis_points[0x00000001]['value'] = round(self._obis_points[0x00010400]['value'] - self._obis_points[0x00020400]['value'], 2)
-                    self._obis_points[0x00000002]['value'] = round(self._obis_points[0x00150400]['value'] - self._obis_points[0x00160400]['value'], 2)
-                    self._obis_points[0x00000003]['value'] = round(self._obis_points[0x00290400]['value'] - self._obis_points[0x002a0400]['value'], 2)
-                    self._obis_points[0x00000004]['value'] = round(self._obis_points[0x003D0400]['value'] - self._obis_points[0x003E0400]['value'], 2)
-                    self._obis_points[0x00000005]['value'] = round((self._obis_points[0x00150400]['value'] - self._obis_points[0x00160400]['value']) / self._obis_points[0x00200400]['value'], 2)
-                    self._obis_points[0x00000006]['value'] = round((self._obis_points[0x00290400]['value'] - self._obis_points[0x002a0400]['value']) / self._obis_points[0x00340400]['value'], 2)
-                    self._obis_points[0x00000007]['value'] = round((self._obis_points[0x003D0400]['value'] - self._obis_points[0x003E0400]['value']) / self._obis_points[0x00480400]['value'], 2)
+                # calculate the power values
+                self._obis_points[0x00000001]['value'] = round(self._obis_points[0x00010400]['value'] - self._obis_points[0x00020400]['value'], 2)
+                self._obis_points[0x00000002]['value'] = round(self._obis_points[0x00150400]['value'] - self._obis_points[0x00160400]['value'], 2)
+                self._obis_points[0x00000003]['value'] = round(self._obis_points[0x00290400]['value'] - self._obis_points[0x002a0400]['value'], 2)
+                self._obis_points[0x00000004]['value'] = round(self._obis_points[0x003D0400]['value'] - self._obis_points[0x003E0400]['value'], 2)
+                self._obis_points[0x00000005]['value'] = round((self._obis_points[0x00150400]['value'] - self._obis_points[0x00160400]['value']) / self._obis_points[0x00200400]['value'], 2)
+                self._obis_points[0x00000006]['value'] = round((self._obis_points[0x00290400]['value'] - self._obis_points[0x002a0400]['value']) / self._obis_points[0x00340400]['value'], 2)
+                self._obis_points[0x00000007]['value'] = round((self._obis_points[0x003D0400]['value'] - self._obis_points[0x003E0400]['value']) / self._obis_points[0x00480400]['value'], 2)
 
                 for obis_value in self._obis_points.values():
                     if obis_value['path'] != '':
-                        self._dbusservice[obis_value['path']
-                                          ] = obis_value['value']
+                        self._dbusservice[obis_value['path']] = obis_value['value']
 
         except:
             logging.info("WARNING: Could not read from SMA Energy Meter")
@@ -201,13 +201,20 @@ class DbusSMAEMService(object):
 # dbus com.victronenergy.pvinverter.output
 # dbus com.victronenergy.pvinverter.output /Ac/Energy/Forward GetValue
 # dbus com.victronenergy.pvinverter.output /Ac/Energy/Forward SetValue %20
+# dbus com.victronenergy.grid.smaem /Ac/Energy/Forward GetValue
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
 
+    from dbus.mainloop.glib import DBusGMainLoop
+    # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
+    DBusGMainLoop(set_as_default=True)
+
     pvac_output = DbusSMAEMService(
         servicename='com.victronenergy.grid.smaem', deviceinstance=0)
 
+    mainloop = GLib.MainLoop()
+    mainloop.run()
 
 if __name__ == "__main__":
     main()
