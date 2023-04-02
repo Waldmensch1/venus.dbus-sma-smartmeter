@@ -61,14 +61,57 @@ If the script stops with the message
 
 it means that the service is still running or another service is using that bus name.
 
-Within repo you find a script speedwire_test.py . You can run it on your target machine to see whether UDP Broadcast is received. The script just listen an print received values on console. There is no dependency to VenusOS, means it should run on any Linux box where Python is installed
+Within repo you find a script **speedwire_test.py**. You can run it on your target machine to see whether UDP Broadcast is received. The script just listen an print received values on console. There is no dependency to VenusOS, means it should run on any Linux box where Python is installed
+
+Output should look like this:
+```pregard: 42.9W
+pregardcounter: 5861.8kWh
+surplus: 0.0W
+surpluscounter: 7532.98kWh
+L1_voltage: 237.09V
+L2_voltage: 226.54V
+L3_voltage: 222.84V
+L1_pregard: 251.1W
+L2_pregard: 0.0W
+L3_pregard: 5.9W
+L1_surplus: 0.0W
+L2_surplus: 214.2W
+L3_surplus: 0.0W
+power: 42.9W
+L1_power: 251.1W
+L2_power: -214.2W
+L2_power: 5.9W
+L1_current: 1.06A
+L2_current: -0.95A
+L3_current: 0.03A
+pregard: 18.3W
+pregardcounter: 5861.8kWh
+surplus: 0.0W
+surpluscounter: 7532.98kWh
+L1_voltage: 237.26V
+L2_voltage: 226.1V
+L3_voltage: 222.97V
+L1_pregard: 242.5W
+L2_pregard: 0.0W
+L3_pregard: 0.0W
+L1_surplus: 0.0W
+L2_surplus: 223.1W
+L3_surplus: 1.1W
+power: 18.3W
+L1_power: 242.5W
+L2_power: -223.1W
+L2_power: -1.1W
+L1_current: 1.02A
+L2_current: -0.99
+```
+
 #### Restart the script
 
 If you want to restart the script, for example after changing it, just run the following command:
 
 `/data/dbus-sma-smartmeter/kill_me.sh`
 
-The daemon-tools will restart the scriptwithin a few seconds.
+The daemon-tools will restart the script within a few seconds.
 
 ### Hardware
 
