@@ -22,14 +22,26 @@ obis_points = {
     0x00200400: {'name': 'L1_voltage',     'length': 4, 'factor': 1/1000,    'unit': 'V',   'value': 0, 'path': '/Ac/L1/Voltage'},
     0x00340400: {'name': 'L2_voltage',     'length': 4, 'factor': 1/1000,    'unit': 'V',   'value': 0, 'path': '/Ac/L2/Voltage'},
     0x00480400: {'name': 'L3_voltage',     'length': 4, 'factor': 1/1000,    'unit': 'V',   'value': 0, 'path': '/Ac/L3/Voltage'},
-    0x001F0400: {'name': 'L1_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L1/Current'},
-    0x00330400: {'name': 'L2_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L2/Current'},
-    0x00470400: {'name': 'L3_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L3/Current'},
+    #0x001F0400: {'name': 'L1_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L1/Current'},
+    #0x00330400: {'name': 'L2_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L2/Current'},
+    #0x00470400: {'name': 'L3_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L3/Current'},
+    
+    0x00150400: {'name': 'L1_pregard',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
+    0x00290400: {'name': 'L2_pregard',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
+    0x003D0400: {'name': 'L3_pregard',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
+    
+    0x00160400: {'name': 'L1_surplus',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
+    0x002a0400: {'name': 'L2_surplus',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
+    0x003E0400: {'name': 'L3_surplus',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
+
     # calculated values
     0x00000001: {'name': 'power',          'length': 0, 'factor': 1,         'unit': 'W',   'value': 0, 'path': '/Ac/Power'},
     0x00000002: {'name': 'L1_power',       'length': 0, 'factor': 1,         'unit': 'W',   'value': 0, 'path': '/Ac/L1/Power'},
     0x00000003: {'name': 'L2_power',       'length': 0, 'factor': 1,         'unit': 'W',   'value': 0, 'path': '/Ac/L2/Power'},
     0x00000004: {'name': 'L2_power',       'length': 0, 'factor': 1,         'unit': 'W',   'value': 0, 'path': '/Ac/L3/Power'},
+    0x00000005: {'name': 'L1_current',     'length': 0, 'factor': 1,         'unit': 'A',   'value': 0, 'path': '/Ac/L1/Current'},
+    0x00000006: {'name': 'L2_current',     'length': 0, 'factor': 1,         'unit': 'A',   'value': 0, 'path': '/Ac/L2/Current'},
+    0x00000007: {'name': 'L3_current',     'length': 0, 'factor': 1,         'unit': 'A',   'value': 0, 'path': '/Ac/L3/Current'},
 }
 
 
@@ -93,14 +105,13 @@ def decode_speedwire(data):
             pos += length
 
         # calculate the power values
-        obis_points[0x00000001]['value'] = round(
-            obis_points[0x00010400]['value'] - obis_points[0x00020400]['value'], 2)
-        obis_points[0x00000002]['value'] = round(
-            obis_points[0x00340400]['value'] * obis_points[0x001F0400]['value'], 2)
-        obis_points[0x00000003]['value'] = round(
-            obis_points[0x00340400]['value'] * obis_points[0x00330400]['value'], 2)
-        obis_points[0x00000004]['value'] = round(
-            obis_points[0x00480400]['value'] * obis_points[0x00470400]['value'], 2)
+        obis_points[0x00000001]['value'] = round(obis_points[0x00010400]['value'] - obis_points[0x00020400]['value'], 2)
+        obis_points[0x00000002]['value'] = round(obis_points[0x00150400]['value'] - obis_points[0x00160400]['value'], 2)
+        obis_points[0x00000003]['value'] = round(obis_points[0x00290400]['value'] - obis_points[0x002a0400]['value'], 2)
+        obis_points[0x00000004]['value'] = round(obis_points[0x003D0400]['value'] - obis_points[0x003E0400]['value'], 2)
+        obis_points[0x00000005]['value'] = round((obis_points[0x00150400]['value'] - obis_points[0x00160400]['value']) / obis_points[0x00200400]['value'], 2)
+        obis_points[0x00000006]['value'] = round((obis_points[0x00290400]['value'] - obis_points[0x002a0400]['value']) / obis_points[0x00340400]['value'], 2)
+        obis_points[0x00000007]['value'] = round((obis_points[0x003D0400]['value'] - obis_points[0x003E0400]['value']) / obis_points[0x00480400]['value'], 2)
 
         for obis_values in obis_points.values():
             print(obis_values['name'] + ": " +
