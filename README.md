@@ -61,6 +61,7 @@ If the script stops with the message
 
 it means that the service is still running or another service is using that bus name.
 
+Within repo you find a script speedwire_test.py . You can run it on your target machine to see whether UDP Broadcast is received. The script just listen an print received values on console. There is no dependency to VenusOS, means it should run on any Linux box where Python is installed
 #### Restart the script
 
 If you want to restart the script, for example after changing it, just run the following command:
