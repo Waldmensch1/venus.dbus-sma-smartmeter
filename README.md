@@ -19,7 +19,9 @@ Not needed
 
    `chmod 755 /data/dbus-sma-smartmeter/service/run`
 
-   `chmod 744 /data/dbus-sma-smartmeter/kill_me.sh`
+   `chmod 755 /data/dbus-sma-smartmeter/kill_me.sh`
+
+   `chmod 755 /data/dbus-sma-smartmeter/rc.local`
 
 3. Get two files from the [velib_python](https://github.com/victronenergy/velib_python) and install them on your venus:
 
@@ -32,8 +34,12 @@ Not needed
 
    Or if that file does not exist yet, store the file rc.local from this service on your Raspberry Pi as /data/rc.local .
    You can then create the symlink by just running rc.local:
+
+   make it executable with
+
+   `chmod 755 /data/rc.local`
   
-   `rc.local`
+   `/data/rc.local`
 
    The daemon-tools should automatically start this service within seconds.
 
