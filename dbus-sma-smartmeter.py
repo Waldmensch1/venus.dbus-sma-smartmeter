@@ -22,6 +22,7 @@ import argparse
 import logging
 import sys
 import os
+import threading
 
 MULTICAST_IP = "239.12.255.254"
 MULTICAST_PORT = 9522
@@ -29,9 +30,8 @@ MULTICAST_PORT = 9522
 # our own packages
 sys.path.insert(1, os.path.join(
     os.path.dirname(__file__), '../ext/velib_python'))
-
 class DbusSMAEMService(object):
-    def __init__(self, servicename, deviceinstance, productname='SMA-EM', connection='SMA-EM Service'):
+    def __init__(self, servicename, deviceinstance, productname='SMA-EM Speedwire Bridge', connection='SMA-EM Service'):
 
         self._obis_points = {
             # real values
@@ -99,8 +99,12 @@ class DbusSMAEMService(object):
         self._sock.setsockopt(
             socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
+        threading.Thread(target=self._alive, args=(self._sock,)).start()
+
+    def _alive(self, sock):
+        logging.info('Socket Thread started')
         while True:
-            self._update(self._sock.recv(10240))
+           self._update(sock.recv(1024))
 
     def _update(self, data):
 
@@ -108,7 +112,7 @@ class DbusSMAEMService(object):
             arrlen = len(data)
 
             sma = str(data[0:3], 'ascii')
-            # logging.info(sma + ' length: ' + str(arrlen))
+            #logging.info(sma + ' length: ' + str(arrlen))
             if sma == 'SMA' and arrlen > 100:
 
                 # 270 = SMAEM10, 349 = SMAEM20, 372 = SHM2.0
@@ -176,32 +180,21 @@ class DbusSMAEMService(object):
                     if obis_value['path'] != '':
                         self._dbusservice[obis_value['path']] = obis_value['value']
 
+                # increment UpdateIndex - to show that new data is available
+                index = self._dbusservice['/UpdateIndex'] + 1
+                if index > 255:
+                    index = 0
+                self._dbusservice['/UpdateIndex'] = index
+
         except:
             logging.info("WARNING: Could not read from SMA Energy Meter")
             self._dbusservice['/Ac/Power'] = 0
-
-        # increment UpdateIndex - to show that new data is available
-        index = self._dbusservice['/UpdateIndex'] + 1
-        if index > 255:
-            index = 0
-        self._dbusservice['/UpdateIndex'] = index
 
         return True
 
     def _handlechangedvalue(self, path, value):
         logging.debug("someone else updated %s to %s" % (path, value))
         return True  # accept the change
-
-
-# === All code below is to simply run it from the commandline for debugging purposes ===
-
-# It will created a dbus service called com.victronenergy.pvinverter.output.
-# To try this on commandline, start this program in one terminal, and try these commands
-# from another terminal:
-# dbus com.victronenergy.pvinverter.output
-# dbus com.victronenergy.pvinverter.output /Ac/Energy/Forward GetValue
-# dbus com.victronenergy.pvinverter.output /Ac/Energy/Forward SetValue %20
-# dbus com.victronenergy.grid.smaem /Ac/Energy/Forward GetValue
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
