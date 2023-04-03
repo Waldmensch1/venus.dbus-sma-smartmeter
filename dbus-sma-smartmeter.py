@@ -33,6 +33,13 @@ sys.path.insert(1, os.path.join(
 class DbusSMAEMService(object):
     def __init__(self, servicename, deviceinstance, productname='SMA-EM Speedwire Bridge', connection='SMA-EM Service'):
 
+        self._hardware = {
+            0  : {'name' : 'UNKNOWN', 'serial' : 0, 'sw' : '', 'active' : False},
+            270: {'name' : 'SMA-EM10', 'serial' : 0, 'sw' : '', 'active' : False}, 
+            349: {'name' : 'SMA-EM20', 'serial' : 0, 'sw' : '', 'active' : False}, 
+            372: {'name' : 'SHM2.0',  'serial' : 0, 'sw' : '', 'active' : False},
+        }
+
         self._obis_points = {
             # real values
             0x00010400: {'name': 'pregard',        'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
@@ -53,6 +60,7 @@ class DbusSMAEMService(object):
             0x00160400: {'name': 'L1_surplus',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
             0x002a0400: {'name': 'L2_surplus',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
             0x003E0400: {'name': 'L3_surplus',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
+            0x90000000: {'name': 'sw_version_raw', 'length': 4, 'factor': 1 ,        'unit': '',    'value': 0, 'path': ''},
 
             # calculated values
             0x00000001: {'name': 'power',          'length': 0, 'factor': 1,         'unit': 'W',   'value': 0, 'path': '/Ac/Power'},
@@ -79,8 +87,9 @@ class DbusSMAEMService(object):
         self._dbusservice.add_path('/DeviceInstance', deviceinstance)
         self._dbusservice.add_path('/ProductId', 16)
         self._dbusservice.add_path('/ProductName', productname)
-        self._dbusservice.add_path('/FirmwareVersion', 0.1)
-        self._dbusservice.add_path('/HardwareVersion', 0)
+        self._dbusservice.add_path('/FirmwareVersion', 0)
+        self._dbusservice.add_path('/HardwareVersion', 'UNKNOWN')
+        self._dbusservice.add_path('/Serial', 0)
         self._dbusservice.add_path('/Connected', 1)
         self._dbusservice.add_path('/UpdateIndex', 0)
 
@@ -115,10 +124,17 @@ class DbusSMAEMService(object):
             #logging.info(sma + ' length: ' + str(arrlen))
             if sma == 'SMA' and arrlen > 100:
 
-                # 270 = SMAEM10, 349 = SMAEM20, 372 = SHM2.0
                 SMASusyID = int.from_bytes(data[18:20], 'big')
                 SMASerial = int.from_bytes(data[20:24], 'big')
                 # logging.info('SMASusyID: ' + str(SMASusyID) + ' SMASerial: ' + str(SMASerial))
+
+                if SMASusyID not in self._hardware:
+                    SMASusyID = 0
+
+                if self._hardware[SMASusyID]['active'] == False:
+                    self._hardware[SMASusyID]['serial'] = SMASerial
+                    self._dbusservice['/HardwareVersion'] = self._hardware[SMASusyID]['name']
+                    self._dbusservice['/Serial'] = self._hardware[SMASusyID]['serial']
 
                 pos = 28
 
@@ -175,6 +191,16 @@ class DbusSMAEMService(object):
                 self._obis_points[0x00000005]['value'] = round((self._obis_points[0x00150400]['value'] - self._obis_points[0x00160400]['value']) / self._obis_points[0x00200400]['value'], 2)
                 self._obis_points[0x00000006]['value'] = round((self._obis_points[0x00290400]['value'] - self._obis_points[0x002a0400]['value']) / self._obis_points[0x00340400]['value'], 2)
                 self._obis_points[0x00000007]['value'] = round((self._obis_points[0x003D0400]['value'] - self._obis_points[0x003E0400]['value']) / self._obis_points[0x00480400]['value'], 2)
+
+                if self._hardware[SMASusyID]['active'] == False:
+                    swr = self._obis_points[0x90000000]['value']
+                    sw = str((swr >> 24) & 0xFF)
+                    sw += '.' + str((swr >> 16) & 0xFF)
+                    sw += '.' + str((swr >> 8) & 0xFF)
+                    sw += '.' + chr(swr & 0xFF)
+                    self._hardware[SMASusyID]['sw'] = sw
+                    self._dbusservice['/FirmwareVersion'] = self._hardware[SMASusyID]['sw']
+                    self._hardware[SMASusyID]['active'] = True
 
                 for obis_value in self._obis_points.values():
                     if obis_value['path'] != '':
