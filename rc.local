@@ -1,0 +1,5 @@
+#!/bin/sh
+
+ln -s /data/dbus-sma-smartmeter/service /service/dbus-sma-smartmeter
+
+exit 0
