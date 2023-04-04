@@ -20,6 +20,7 @@ import struct
 import platform
 import argparse
 import logging
+from logging.handlers import RotatingFileHandler
 import sys
 import os
 import threading
@@ -30,14 +31,37 @@ MULTICAST_PORT = 9522
 # our own packages
 sys.path.insert(1, os.path.join(
     os.path.dirname(__file__), '../ext/velib_python'))
+
+os.makedirs('/var/log/dbus-sma-smartmeter', exist_ok=True) 
+logging.basicConfig(
+    format = '%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+    datefmt = '%Y-%m-%d %H:%M:%S',
+    level = logging.DEBUG,
+    handlers = [
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler = RotatingFileHandler('/var/log/dbus-sma-smartmeter/current.log', maxBytes=200000, backupCount=5)
+handler.setLevel(logging.DEBUG)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 class DbusSMAEMService(object):
     def __init__(self, servicename, deviceinstance, productname='SMA-EM Speedwire Bridge', connection='SMA-EM Service'):
 
+        self._protocol_points = {
+			'SMASusyID': {'name': 'SMA Device SUSy-ID'                     , 'update': False, 'addr': 18, 'length': 2, 'unit': ''},
+			'SMASerial': {'name': 'SMA Device Serial Number'               , 'update': False, 'addr': 20, 'length': 4, 'unit': ''},
+			'TimeTick':  {'name': 'SMA Time Tick Counter (32-bit overflow)', 'update': True , 'addr': 24, 'length': 4, 'unit': 'ms'}
+		}
+
         self._hardware = {
-            0  : {'name' : 'UNKNOWN', 'serial' : 0, 'sw' : '', 'active' : False},
+            0  : {'name' : 'UNKNOWN',  'serial' : 0, 'sw' : '', 'active' : False},
             270: {'name' : 'SMA-EM10', 'serial' : 0, 'sw' : '', 'active' : False}, 
             349: {'name' : 'SMA-EM20', 'serial' : 0, 'sw' : '', 'active' : False}, 
-            372: {'name' : 'SHM2.0',  'serial' : 0, 'sw' : '', 'active' : False},
+            372: {'name' : 'SHM2.0',   'serial' : 0, 'sw' : '', 'active' : False},
         }
 
         self._obis_points = {
@@ -49,19 +73,13 @@ class DbusSMAEMService(object):
             0x00200400: {'name': 'L1_voltage',     'length': 4, 'factor': 1/1000,    'unit': 'V',   'value': 0, 'path': '/Ac/L1/Voltage'},
             0x00340400: {'name': 'L2_voltage',     'length': 4, 'factor': 1/1000,    'unit': 'V',   'value': 0, 'path': '/Ac/L2/Voltage'},
             0x00480400: {'name': 'L3_voltage',     'length': 4, 'factor': 1/1000,    'unit': 'V',   'value': 0, 'path': '/Ac/L3/Voltage'},
-            #0x001F0400: {'name': 'L1_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L1/Current'},
-            #0x00330400: {'name': 'L2_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L2/Current'},
-            #0x00470400: {'name': 'L3_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L3/Current'},
-            
             0x00150400: {'name': 'L1_pregard',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
             0x00290400: {'name': 'L2_pregard',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
             0x003D0400: {'name': 'L3_pregard',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
-            
             0x00160400: {'name': 'L1_surplus',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
             0x002a0400: {'name': 'L2_surplus',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
             0x003E0400: {'name': 'L3_surplus',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
             0x90000000: {'name': 'sw_version_raw', 'length': 4, 'factor': 1 ,        'unit': '',    'value': 0, 'path': ''},
-
             # calculated values
             0x00000001: {'name': 'power',          'length': 0, 'factor': 1,         'unit': 'W',   'value': 0, 'path': '/Ac/Power'},
             0x00000002: {'name': 'L1_power',       'length': 0, 'factor': 1,         'unit': 'W',   'value': 0, 'path': '/Ac/L1/Power'},
@@ -73,8 +91,8 @@ class DbusSMAEMService(object):
         }
 
         self._dbusservice = VeDbusService(servicename)
-        logging.info('Connected to dbus, DbusSMAEMService class created')
-        logging.debug("%s /DeviceInstance = %d" %
+        logger.info('Connected to dbus, DbusSMAEMService class created')
+        logger.debug("%s /DeviceInstance = %d" %
                       (servicename, deviceinstance))
 
         # Create the management objects, as specified in the ccgx dbus-api document
@@ -111,7 +129,7 @@ class DbusSMAEMService(object):
         threading.Thread(target=self._alive, args=(self._sock,)).start()
 
     def _alive(self, sock):
-        logging.info('Socket Thread started')
+        logger.info('Socket Thread started')
         while True:
            self._update(sock.recv(1024))
 
@@ -121,12 +139,12 @@ class DbusSMAEMService(object):
             arrlen = len(data)
 
             sma = str(data[0:3], 'ascii')
-            #logging.info(sma + ' length: ' + str(arrlen))
+            #logger.info(sma + ' length: ' + str(arrlen))
             if sma == 'SMA' and arrlen > 100:
 
                 SMASusyID = int.from_bytes(data[18:20], 'big')
                 SMASerial = int.from_bytes(data[20:24], 'big')
-                # logging.info('SMASusyID: ' + str(SMASusyID) + ' SMASerial: ' + str(SMASerial))
+                # logger.info('SMASusyID: ' + str(SMASusyID) + ' SMASerial: ' + str(SMASerial))
 
                 if SMASusyID not in self._hardware:
                     SMASusyID = 0
@@ -173,7 +191,7 @@ class DbusSMAEMService(object):
                         val = int.from_bytes(data[pos: pos + length], 'big')
 
                     else:
-                        logging.info(
+                        logger.info(
                             "Only OBIS message length of 4 or 8 is support, current length is" + length)
 
                     # Convert raw value to final value
@@ -213,17 +231,16 @@ class DbusSMAEMService(object):
                 self._dbusservice['/UpdateIndex'] = index
 
         except:
-            logging.info("WARNING: Could not read from SMA Energy Meter")
+            logger.info("WARNING: Could not read from SMA Energy Meter")
             self._dbusservice['/Ac/Power'] = 0
 
         return True
 
     def _handlechangedvalue(self, path, value):
-        logging.debug("someone else updated %s to %s" % (path, value))
+        logger.debug("someone else updated %s to %s" % (path, value))
         return True  # accept the change
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
 
     from dbus.mainloop.glib import DBusGMainLoop
     # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
