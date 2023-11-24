@@ -12,11 +12,17 @@ Not needed
 SSH to your Device and use the following commands one after eachother:
 
    `opkg update`
+
    `opkg install git`
+
    `cd /data`
+
    `git clone https://github.com/Waldmensch1/venus.dbus-sma-smartmeter`
+
    `cd venus.dbus-sma-smartmeter`
+
    `chmod 755 install.sh`
+   
    `./install.sh`
 
 After running install.sh the service should be configured and running
