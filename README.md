@@ -7,7 +7,21 @@ The Python script listen to the SMA-EM broadcast and publishes information on th
 
 Not needed
 
-### Installation
+### New semi automatic Installation
+
+SSH to your Device and use the following commands one after eachother:
+
+   `opkg update`
+   `opkg install git`
+   `cd /data`
+   `git clone https://github.com/Waldmensch1/venus.dbus-sma-smartmeter`
+   `cd venus.dbus-sma-smartmeter`
+   `chmod 755 install.sh`
+   `./install.sh`
+
+After running install.sh the service should be configured and running
+
+### Manual Installation
 
 1. Copy the files to the /data folder on your venus:
 
