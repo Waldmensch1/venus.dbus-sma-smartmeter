@@ -9,8 +9,8 @@ chmod a+x $SCRIPT_DIR/service/run
 chmod 755 $SCRIPT_DIR/service/run
 
 #add dependencies
-wget https://raw.githubusercontent.com/victronenergy/velib_python/master/vedbus.py
-wget https://raw.githubusercontent.com/victronenergy/velib_python/master/ve_utils.py
+wget -N -q https://raw.githubusercontent.com/victronenergy/velib_python/master/vedbus.py
+wget -N -q https://raw.githubusercontent.com/victronenergy/velib_python/master/ve_utils.py
 
 # create symlink to run script as daemon
 ln -s $SCRIPT_DIR/service /service/$SERVICE_NAME
