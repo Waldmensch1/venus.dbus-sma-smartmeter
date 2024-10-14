@@ -27,6 +27,8 @@ import threading
 
 MULTICAST_IP = "239.12.255.254"
 MULTICAST_PORT = 9522
+# set serial from used energiemeter if more then one in your network otherwise set to 0
+EM_SERIAL = 0
 
 # our own packages
 sys.path.insert(1, os.path.join(
@@ -154,6 +156,12 @@ class DbusSMAEMService(object):
                 SMASusyID = int.from_bytes(data[18:20], 'big')
                 SMASerial = int.from_bytes(data[20:24], 'big')
                 # logger.info('SMASusyID: ' + str(SMASusyID) + ' SMASerial: ' + str(SMASerial))
+
+                # check serialnumber, if not equal end update
+                if EM_SERIAL != 0:
+
+                    if SMASerial != EM_SERIAL:
+                        return True
 
                 if SMASusyID not in self._hardware:
                     SMASusyID = 0
