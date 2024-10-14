@@ -22,9 +22,9 @@ obis_points = {
     0x00200400: {'name': 'L1_voltage',     'length': 4, 'factor': 1/1000,    'unit': 'V',   'value': 0, 'path': '/Ac/L1/Voltage'},
     0x00340400: {'name': 'L2_voltage',     'length': 4, 'factor': 1/1000,    'unit': 'V',   'value': 0, 'path': '/Ac/L2/Voltage'},
     0x00480400: {'name': 'L3_voltage',     'length': 4, 'factor': 1/1000,    'unit': 'V',   'value': 0, 'path': '/Ac/L3/Voltage'},
-    #0x001F0400: {'name': 'L1_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L1/Current'},
-    #0x00330400: {'name': 'L2_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L2/Current'},
-    #0x00470400: {'name': 'L3_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L3/Current'},
+    0x001F0400: {'name': 'L1_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L1/Current'},
+    0x00330400: {'name': 'L2_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L2/Current'},
+    0x00470400: {'name': 'L3_current',     'length': 4, 'factor': 1/1000,    'unit': 'A',   'value': 0, 'path': '/Ac/L3/Current'},
 
     0x00150400: {'name': 'L1_pregard',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
     0x00290400: {'name': 'L2_pregard',     'length': 4, 'factor': 1/10,      'unit': 'W',   'value': 0, 'path': ''},
